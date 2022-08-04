@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Written by Brian Jenkins 
+# 4 August 2022
+
+# This script is based on the fence_ssh script written by Steve Bissaker
+# See credits and GPL below
+# https://github.com/nannafudge/fence_ssh/blob/alternate_version/fence_ssh
+
 # Copyright (C) 2017  Steve Bissaker
 #
 # This program is free software: you can redistribute it and/or modify
@@ -32,6 +39,9 @@ fi
 
 # Default action
 action=$__OCF_ACTION
+# Current node name
+current_node_name=$(crm_node -n)
+# Default user to ssh as
 user='root'
 description="${__SCRIPT_NAME} is a basic fencing agent that uses SSH."
 
@@ -39,12 +49,12 @@ function usage()
 {
 cat <<EOF
 $__SCRIPT_NAME - $description
-Usage: $__SCRIPT_NAME [action] -h|--hostname [hostname] [Additional Options...]
+Usage: $__SCRIPT_NAME [action] -n|--nodename [nodename] [Additional Options...]
 Options:
  --help 	   This text
 Commands:
  -a, --action      Action to perform: off/shutdown|reboot|monitor|metadata, defaults to reboot
- -h, --hostname    Host to fence
+ -n, --nodename    Node to fence
 Additional Options:
  -u, --user        OPTIONAL: User to ssh as, defaults to root
  -s, --sudo        OPTIONAL: true/false: Whether to execute the action using sudo
@@ -75,11 +85,11 @@ cat <<EOF
       <shortdesc lang="en">User to SSH as on remote</shortdesc>
       <longdesc lang="en">The user to SSH as and execute the STONITH command as on the remote machine</longdesc>
     </parameter>
-    <parameter name="hostname" unique="0" required="1">
-      <getopt mixed="-h, --hostname"/>
+    <parameter name="nodename" unique="0" required="0">
+      <getopt mixed="-n, --nodename"/>
       <content type="string"/>
-      <shortdesc lang="en">Target hostname</shortdesc>
-      <longdesc lang="en">The hostname of the remote machine to fence</longdesc>
+      <shortdesc lang="en">Target nodename</shortdesc>
+      <longdesc lang="en">The nodename of the remote machine to fence</longdesc>
     </parameter>
     <parameter name="password" unique="0" required="0">
       <getopt mixed="-p, --password"/>
@@ -87,8 +97,8 @@ cat <<EOF
       <shortdesc lang="en">Target password</shortdesc>
       <longdesc lang="en">The password of the remote SSH user (optional)</longdesc>
     </parameter>
-    <parameter name="key" unique="0" required="0">
-      <getopt mixed="-k, --key"/>
+    <parameter name="private-key" unique="0" required="0">
+      <getopt mixed="-k, --private-key"/>
       <content type="string"/>
       <shortdesc lang="en">Target private key</shortdesc>
       <longdesc lang="en">SSH private key to authenticate with (optional)</longdesc>
@@ -112,22 +122,16 @@ EOF
 }
 
 function monitor() {
-  if [[ -z $host ]]
-  then
-    ocf_log err "Error, no hostname specified! Run '${__SCRIPT_NAME} --help' for usage."
-    return $OCF_ERR_ARGS
-  fi
-
-  ping_output=$(ping -c 1 $host 2>&1)
+  # Only need errors from cat here really
+  ps_output=$(ps -p $(cat /run/sshd.pid) > /dev/null 2>&1)
 
   if [[ $? != 0 ]]
   then
-    ocf_log debug "${__SCRIPT_NAME}: UNABLE to reach fencing target ${host}: ${ping_output}"
-    # Machine might be rebooting, don't fail the resource
-    return $OCF_SUCCESS
+    ocf_Log err "${__SCRIPT_NAME}: SSHD NOT running on resource ${current_node_name}: ${ps_output}"
+    return $OCF_NOT_RUNNING
   fi
 
-  ocf_log debug "${__SCRIPT_NAME}: Able to reach fencing target ${host}"
+  ocf_log debug "${__SCRIPT_NAME}: SSHD is running, ${current_node_name} is availble for fencing if need be."
   return $OCF_SUCCESS
 }
 
@@ -138,7 +142,7 @@ function perform_ssh() {
 
   if [[ -z $host ]]
   then
-    ocf_log err "Error, no hostname specified! Run '${__SCRIPT_NAME} --help' for usage."
+    ocf_log err "Error, no nodename specified! Run '${__SCRIPT_NAME} --help' for usage."
     return $OCF_ERR_ARGS
   fi
 
@@ -198,7 +202,7 @@ do
       shift
       shift
     ;;
-    -h | --hostname)
+    -n | --nodename)
       host=$2
       shift
       shift
@@ -220,12 +224,6 @@ do
     ;;
     --help)
       usage
-    ;;
-    # Can ignore these two, they come from pacemaker and we don't need them
-    # Might make use of them in the future
-    --nodename)
-      shift
-      shift
     ;;
     --port)
       shift
