@@ -3,6 +3,11 @@
 # Written by Brian Jenkins 
 # 4 August 2022
 
+# Send a UDP packet to the homemade power supply to cycle power to any one
+# of the individual power supplies. This will serve to fence a Raspberry Pi
+# that is powered by this supply. This script is used in conjuction with
+# a pacemaker cluster setup with Raspberry Pis. 
+
 # This script is based on the fence_ssh script written by Steve Bissaker
 # See credits and GPL below
 # https://github.com/nannafudge/fence_ssh/blob/alternate_version/fence_ssh
@@ -43,23 +48,22 @@ action=$__OCF_ACTION
 current_node_name=$(crm_node -n)
 # Default user to ssh as
 user='root'
-description="${__SCRIPT_NAME} is a basic fencing agent that uses SSH."
+description="${__SCRIPT_NAME} is a fencing agent for homemade USB power supply."
 
 function usage()
 {
 cat <<EOF
 $__SCRIPT_NAME - $description
-Usage: $__SCRIPT_NAME [action] -n|--nodename [nodename] [Additional Options...]
+Usage: $__SCRIPT_NAME -a|--action [action] -n|--nodename [nodename] [options]
 Options:
- --help 	   This text
+ --help            This text
 Commands:
- -a, --action      Action to perform: off/shutdown|reboot|monitor|metadata, defaults to reboot
+ -a, --action      Action to perform: on|off/shutdown|reboot|monitor|metadata, defaults to reboot
  -n, --nodename    Node to fence
-Additional Options:
- -u, --user        OPTIONAL: User to ssh as, defaults to root
- -s, --sudo        OPTIONAL: true/false: Whether to execute the action using sudo
- -p, --password    OPTIONAL: Password of host to fence
- -k, --private-key OPTIONAL: The private key to use for SSH authentication
+Options:
+ -i, --fence-ip    IP address of the fence device, defaults to broadcast
+ -P, --fence-port  Port of the fence device, default to 11089
+
 EOF
     exit $OCF_SUCCESS;
 }
@@ -68,45 +72,34 @@ function metadata()
 {
 cat <<EOF
 <?xml version="1.0" ?>
-<resource-agent name="${__SCRIPT_NAME}" shortdesc="Basic fencing agent that uses SSH" >
+<resource-agent name="${__SCRIPT_NAME}" shortdesc="Fencing agent for homemade USB power supply" >
   <longdesc>
     $description
   </longdesc>
   <parameters>
     <parameter name="action" unique="0" required="1">
-    <getopt mixed="-o, --action"/>
+    <getopt mixed="-a, --action"/>
     <content type="string" default="reboot"/>
     <shortdesc lang="en">Action to perform</shortdesc>
-    <longdesc lang="en">The action to perform, can be one of: off/shutdown|reboot|monitor|metadata</longdesc>
+    <longdesc lang="en">The action to perform, can be one of: on|off/shutdown|reboot|monitor|metadata</longdesc>
     </parameter>
-    <parameter name="user" unique="0" required="1">
-      <getopt mixed="-u, --user"/>
-      <content type="string" default="root"/>
-      <shortdesc lang="en">User to SSH as on remote</shortdesc>
-      <longdesc lang="en">The user to SSH as and execute the STONITH command as on the remote machine</longdesc>
-    </parameter>
-    <parameter name="nodename" unique="0" required="0">
+    <parameter name="nodename" unique="0" required="1">
       <getopt mixed="-n, --nodename"/>
       <content type="string"/>
       <shortdesc lang="en">Target nodename</shortdesc>
       <longdesc lang="en">The nodename of the remote machine to fence</longdesc>
     </parameter>
-    <parameter name="password" unique="0" required="0">
-      <getopt mixed="-p, --password"/>
-      <content type="string"/>
-      <shortdesc lang="en">Target password</shortdesc>
-      <longdesc lang="en">The password of the remote SSH user (optional)</longdesc>
+        <parameter name="ip" unique="0" required="0">
+      <getopt mixed="-i, --fence-ip"/>
+      <content type="string" default="255.255.255.255"/>
+      <shortdesc lang="en">Fence IP address</shortdesc>
+      <longdesc lang="en">The IP address of the fence device</longdesc>
     </parameter>
-    <parameter name="private-key" unique="0" required="0">
-      <getopt mixed="-k, --private-key"/>
-      <content type="string"/>
-      <shortdesc lang="en">Target private key</shortdesc>
-      <longdesc lang="en">SSH private key to authenticate with (optional)</longdesc>
-    </parameter>
-    <parameter name="sudo" unique="0" required="0">
-      <getopt mixed="-s, --sudo"/>
-      <content type="boolean"/>
-      <shortdesc lang="en">Whether to execute using sudo</shortdesc>
+        <parameter name="fence-port" unique="0" required="0">
+      <getopt mixed="-P, --fence-port"/>
+      <content type="string" default="11089"/>
+      <shortdesc lang="en">Fence port</shortdesc>
+      <longdesc lang="en">The port of the fence device</longdesc>
     </parameter>
   </parameters>
   <actions>
@@ -121,6 +114,8 @@ EOF
     exit 0;
 }
 
+# TODO: Needs to be completely changed
+# Function to monitor the status of each power supply and report back to pacemaker
 function monitor() {
   # Only need errors from cat here really
   ps_output=$(ps -p $(cat /run/sshd.pid) > /dev/null 2>&1)
@@ -135,9 +130,11 @@ function monitor() {
   return $OCF_SUCCESS
 }
 
-# $1 is the SSH command to perform
-function perform_ssh() {
-  ssh_command="ssh"
+# TODO: Nneed to change to the actual action
+# Function to send a UDP packet to the power supply and perform the fencing
+# $1 is the command to perform (on | shutdown | reboot)
+function perform_action() {
+  command="nc -q0 -p 11089"
   real_action=$1
 
   if [[ -z $host ]]
@@ -151,19 +148,24 @@ function perform_ssh() {
     real_action="sudo ${real_action}"
   fi
 
-  if [[ -n $password ]]
+  # add the destination ip to the end of the command
+  if [[ -n $fence_ip ]]
   then
-    ssh_command="sshpass -p${password} ssh"
+    command="${command} ${fence_ip}"
+  else
+    command="${command} 255.255.255.255"
+  fi
+  # add the destination ip to the end of the command
+  if [[ -n $fence_port ]]
+  then
+    command="${command} ${fence_port}"
+  else
+    command="${command} 11089"
   fi
 
-  if [[ -n $private_key ]]
-  then
-    ssh_command="ssh -i ${private_key}"
-  fi
+  ocf_log debug "${__SCRIPT_NAME}: About to execute STONITH command '${command} ${user}@${host} '${real_action}''"
 
-  ocf_log debug "${__SCRIPT_NAME}: About to execute STONITH command '${ssh_command} ${user}@${host} '${real_action}''"
-
-  err_output=$(eval "${ssh_command} ${user}@${host} -o StrictHostKeyChecking=no '${real_action}'" 2>&1)
+  err_output=$(eval "echo '${real_action} ${host}' | ${command}" 2>&1)
   exit_code=$?
 
   if [[ $err_output != *'closed by remote host'* && $exit_code != 0 ]]
@@ -192,13 +194,8 @@ fi
 while [[ $# -gt 0 ]]
 do
   case $1 in
-    -o | --action)
+    -a | --action)
       action=$2
-      shift
-      shift
-    ;;
-    -u | --user)
-      user=$2
       shift
       shift
     ;;
@@ -207,18 +204,13 @@ do
       shift
       shift
     ;;
-    -p | --password)
-      password=$2
+    -i | --fence-ip)
+      fence_ip=$2
       shift
       shift
     ;;
-    -k | --private-key)
-      private_key=$2
-      shift
-      shift
-    ;;
-    -s | --sudo)
-      sudo=$2
+    -P | --fence-port)
+      fence_port=$2
       shift
       shift
     ;;
@@ -250,15 +242,13 @@ done
 
 case $action in
   on)
-    ocf_log debug "'On' action has not been implemented for this agent."
-    exit $OCF_SUCCESS
-    #exit $OCF_ERR_UNIMPLEMENTED
+    perform_action 'on'
   ;;
   off | shutdown)
-    perform_ssh 'shutdown -h now'
+    perform_action 'shutdown'
   ;;
   reboot)
-    perform_ssh 'shutdown -r now'
+    perform_action 'reboot'
   ;;
   monitor)
     monitor
