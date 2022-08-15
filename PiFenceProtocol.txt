@@ -1,0 +1,8 @@
+# PiFence protocol standard
+# Version 0.1
+# 15 August 2022
+
+# This will describe the protocol used by my homemade power supply and fence device
+# for a Raspberry Pi cluster. The protocol uses UDP packets to communicate between 
+# the cluster and the arduino and ethernet shield that controls the power supply.
+
