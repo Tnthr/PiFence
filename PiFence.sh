@@ -46,8 +46,6 @@ fi
 action=$__OCF_ACTION
 # Current node name
 current_node_name=$(crm_node -n)
-# Default user to ssh as
-user='root'
 description="${__SCRIPT_NAME} is a fencing agent for homemade USB power supply."
 
 function usage()
@@ -61,7 +59,7 @@ Commands:
  -a, --action      Action to perform: on|off/shutdown|reboot|monitor|metadata, defaults to reboot
  -n, --nodename    Node to fence
 Options:
- -i, --fence-ip    IP address of the fence device, defaults to broadcast
+ -i, --fence-ip    IP address of the fence device
  -P, --fence-port  Port of the fence device, default to 11089
 
 EOF
@@ -130,12 +128,12 @@ function monitor() {
   return $OCF_SUCCESS
 }
 
-# TODO: Nneed to change to the actual action
+# TODO: Need to change to the actual action
 # Function to send a UDP packet to the power supply and perform the fencing
 # $1 is the command to perform (on | shutdown | reboot)
 function perform_action() {
-  command="nc -q0 -p 11089"
-  real_action=$1
+  command="nc -u"
+  action_code=$1
 
   if [[ -z $host ]]
   then
@@ -143,19 +141,20 @@ function perform_action() {
     return $OCF_ERR_ARGS
   fi
 
-  if [[ $sudo == 'true' ]]
-  then
-    real_action="sudo ${real_action}"
-  fi
-
+# Unused
+#  if [[ $sudo == 'true' ]]
+#  then
+#    action_code="sudo ${action_code}"
+#  fi
+#
   # add the destination ip to the end of the command
   if [[ -n $fence_ip ]]
   then
     command="${command} ${fence_ip}"
   else
-    command="${command} 255.255.255.255"
+    command="${command} 255.255.255.255" # TODO: This wont work
   fi
-  # add the destination ip to the end of the command
+  # add the destination port to the end of the command
   if [[ -n $fence_port ]]
   then
     command="${command} ${fence_port}"
@@ -163,14 +162,14 @@ function perform_action() {
     command="${command} 11089"
   fi
 
-  ocf_log debug "${__SCRIPT_NAME}: About to execute STONITH command '${command} ${user}@${host} '${real_action}''"
+  ocf_log debug "${__SCRIPT_NAME}: About to execute STONITH command '${command} @${host} '${action_code}''"
 
-  err_output=$(eval "echo '${real_action} ${host}' | ${command}" 2>&1)
+  err_output=$(eval "echo '${action_code}${host}' | ${command}" 2>&1)
   exit_code=$?
 
-  if [[ $err_output != *'closed by remote host'* && $exit_code != 0 ]]
+  if [[  $exit_code != 0 ]]
   then
-    ocf_log err "Error fencing machine with ssh: ${err_output}"
+    ocf_log err "Error fencing machine: ${err_output}"
     return $OCF_ERR_GENERIC
   fi
 
@@ -240,15 +239,40 @@ do
   ocf_log err "Argument '${unknown_arg}' is not a valid argument!"
 done
 
+# Change the node name to the powered port number for use at the arduino
+# This is very hack-ish but I need to convert. Any change to node names and this breaks :(
+# Actually already broken because node names dont line up with port numbers
+case $host in
+  node1)
+    host='0'
+  ;;
+  node2)
+    host='1'
+  ;;
+  node3)
+    host='2'
+  ;;
+  node4)
+    host='3'
+  ;;
+  node5)
+    host='4'
+  ;;
+  node6)
+    host='5'
+  ;;
+esac
+
+# Decide which action was requested and call the action function
 case $action in
   on)
-    perform_action 'on'
+    perform_action 'RP'
   ;;
   off | shutdown)
-    perform_action 'shutdown'
+    perform_action 'RK'
   ;;
   reboot)
-    perform_action 'reboot'
+    perform_action 'RR'
   ;;
   monitor)
     monitor

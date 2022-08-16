@@ -1,6 +1,12 @@
 /*
- Udp NTP Client
+ Pi Fence arduino sketch
+ Used to manage a power supply for a Raspberry Pi Cluster
+ Based on the Example shown below.
+ Written by Brian Jenkins
+ 15 August 2022
+ 
 
+ Udp NTP Client
  Get the time from a Network Time Protocol (NTP) time server
  Demonstrates use of UDP sendPacket and ReceivePacket
  For more on NTP time servers and the messages needed to communicate with them,
