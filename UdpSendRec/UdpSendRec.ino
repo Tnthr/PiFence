@@ -31,9 +31,9 @@ unsigned int localPort = 11089;       // local port to listen for UDP packets
 
 const char timeServer[] = "time.nist.gov"; // time.nist.gov NTP server
 
-const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
+const int PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
 
-byte packetBuffer[NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
+byte packetBuffer[PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
@@ -69,7 +69,7 @@ void loop() {
   delay(1000);
   if (Udp.parsePacket()) {
     // We've received a packet, read the data from it
-    Udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+    Udp.read(packetBuffer, PACKET_SIZE); // read the packet into the buffer
 
     // the timestamp starts at byte 40 of the received packet and is four bytes,
     // or two words, long. First, extract the two words:
@@ -116,7 +116,7 @@ void loop() {
 // send an NTP request to the time server at the given address
 void sendNTPpacket(const char * address) {
   // set all bytes in the buffer to 0
-  memset(packetBuffer, 0, NTP_PACKET_SIZE);
+  memset(packetBuffer, 0, PACKET_SIZE);
   // Initialize values needed to form NTP request
   // (see URL above for details on the packets)
   packetBuffer[0] = 0b11100011;   // LI, Version, Mode
@@ -132,6 +132,6 @@ void sendNTPpacket(const char * address) {
   // all NTP fields have been given values, now
   // you can send a packet requesting a timestamp:
   Udp.beginPacket(address, 123); // NTP requests are to port 123
-  Udp.write(packetBuffer, NTP_PACKET_SIZE);
+  Udp.write(packetBuffer, PACKET_SIZE);
   Udp.endPacket();
 }
