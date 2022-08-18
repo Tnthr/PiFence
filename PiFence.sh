@@ -132,7 +132,7 @@ function monitor() {
 # Function to send a UDP packet to the power supply and perform the fencing
 # $1 is the command to perform (on | shutdown | reboot)
 function perform_action() {
-  command="nc -u"
+  command="nc -u -w2"
   action_code=$1
 
   if [[ -z $host ]]
