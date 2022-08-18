@@ -6,3 +6,31 @@
 # for a Raspberry Pi cluster. The protocol uses UDP packets to communicate between 
 # the cluster and the arduino and ethernet shield that controls the power supply.
 
+16 bytes for the request
+The request starts at the beginning of the block and any unused space will be filled with zeros or ASCII NUL.
+All information is ASCII encoded
+In a response packet the request will be identical to the original request.
+
+First byte
+R = request
+
+Second byte
+S = Status
+K = Kill
+R = Reboot
+P = Power on
+
+Third byte
+[1-9] = port number
+
+16 bytes for the response
+If this is a request packet the response will be all zeros.
+
+First byte
+R = response
+
+Second byte
+0 = success
+1 = error
+2 = power on
+3 = power off
