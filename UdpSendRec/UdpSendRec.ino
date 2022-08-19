@@ -37,37 +37,43 @@ unsigned int localPort = 11089;       // local port to listen for UDP packets
 const int PACKET_SIZE = 48; // Data packet is no more than 48 bytes
 char packetBuffer[PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 char ReplyBuffer[PACKET_SIZE] = "ACK\n";  // a string to send back
+int portPinStatus[6][3] = {
+                          {0, 0, 0},  // lazy filler
+                          {1, 2, 1},  // port 1
+                          {2, 3, 1},  // port 2
+                          {3, 5, 1},  // port 3
+                          {4, 6, 1},  // port 4
+                          {5, 7, 1}   // port 5
+};
+const int PIN = 1;
+const int STATUS = 2;
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
 
 void setup() {
-  // Set the relay pins to output and low
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
-  pinMode(12, OUTPUT);
-  digitalWrite(12, LOW);
-  pinMode(11, OUTPUT);
-  digitalWrite(11, LOW);
-  pinMode(10, OUTPUT);
-  digitalWrite(10, LOW);
-  pinMode(9, OUTPUT);
-  digitalWrite(9, LOW);
+  // Set the relay pins to output and low. In this case 'low' is powered on
+  for (int x = 1; x <= 5; x++) {
+    pinMode(portPinStatus[x][1], OUTPUT);
+    digitalWrite(portPinStatus[x][1], LOW);
+  }
 
   // Open serial communications and wait for port to open:
-  Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
+  //Serial.begin(9600);
+  //while (!Serial) {
+  //  ; // wait for serial port to connect. Needed for native USB port only
+  //}
+
+  //Serial.println("Serial opened.");
 
   // start Ethernet and UDP
   if (Ethernet.begin(mac) == 0) {
-    Serial.println("Failed to configure Ethernet using DHCP");
+    //Serial.println("Failed to configure Ethernet using DHCP");
     // Check for Ethernet hardware present
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-      Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+      //Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     } else if (Ethernet.linkStatus() == LinkOFF) {
-      Serial.println("Ethernet cable is not connected.");
+      //Serial.println("Ethernet cable is not connected.");
     }
     // no point in carrying on, so do nothing forevermore:
     while (true) {
@@ -76,7 +82,7 @@ void setup() {
   }
   Udp.begin(localPort);
 
-  Serial.println("Waiting for data...");
+  //Serial.println("Waiting for data...");
 }
 
 void loop() {
@@ -85,39 +91,47 @@ void loop() {
     // read the packet into packetBuffer
     Udp.read(packetBuffer, PACKET_SIZE);
 
-    int stat = 0;
-
-    //if (len > 0) {
-    //  packetBuffer[len] = "0";
-    //}
+    // The port received will be 1-5 which is cast to int
+    int portNum = (packetBuffer[2] - '0');
+    //char portName = port + '0';
 
     // first character always R; second is what the request is
     if (packetBuffer[0] == 'R') { // This means its a request, should never be anything else
       switch (packetBuffer[1]) {
         case 'S': // Status
-          Serial.println("Got an R and S");
-          stat = digitalRead(packetBuffer[2] + 8);
-          if (stat == LOW) {
+          //Serial.println("Got an R and S");
+          
+          if (portPinStatus[portNum][STATUS] == 1) {
             strcpy(ReplyBuffer, "ON\n");
+
+            //Serial.print("Port is ON: ");
+            //Serial.println(portNum);
           } else {
             strcpy(ReplyBuffer, "OFF\n");
+
+            //Serial.print("Port is OFF: ");
+            //Serial.println(portNum);
           }
           break;
         case 'K': // Kill
-          Serial.println("Got an R and K");
-          digitalWrite(packetBuffer[2], LOW);
+          //Serial.println("Got an R and K");
+          digitalWrite(portPinStatus[portNum][PIN], HIGH);
+          portPinStatus[portNum][STATUS] = 0;
           strcpy(ReplyBuffer, "Success\n");
           break;
         case 'R': // Reboot
-          Serial.println("Got an R and R");
-          digitalWrite(packetBuffer[2], LOW);
+          //Serial.println("Got an R and R");
+          digitalWrite(portPinStatus[portNum][PIN], HIGH);
+          portPinStatus[portNum][STATUS] = 0;
           delay(2000); // 2 seconds delay should be enough
-          digitalWrite(packetBuffer[2], HIGH);
+          digitalWrite(portPinStatus[portNum][PIN], LOW);
+          portPinStatus[portNum][STATUS] = 1;
           strcpy(ReplyBuffer, "Success\n");
           break;
         case 'P': // Power On
-          Serial.println("Got an R and P");
-          digitalWrite(packetBuffer[2], HIGH);
+          //Serial.println("Got an R and P");
+          digitalWrite(portPinStatus[portNum][PIN], LOW);
+          portPinStatus[portNum][STATUS] = 1;
           strcpy(ReplyBuffer, "Success\n");
           break;
       }
@@ -131,27 +145,4 @@ void loop() {
 
   //delay(100);
   Ethernet.maintain();
-}
-
-// send a UDP packet for a response
-void sendPacket(const char * address) {
-  // set the second half of the bytes in the buffer to 0
-  memset(packetBuffer, 0, PACKET_SIZE);
-  // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
-  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
-  packetBuffer[1] = 0;     // Stratum, or type of clock
-  packetBuffer[2] = 6;     // Polling Interval
-  packetBuffer[3] = 0xEC;  // Peer Clock Precision
-  // 8 bytes of zero for Root Delay & Root Dispersion
-  packetBuffer[12]  = 49;
-  packetBuffer[13]  = 0x4E;
-  packetBuffer[14]  = 49;
-  packetBuffer[15]  = 52;
-
-  // all NTP fields have been given values, now
-  // you can send a packet requesting a timestamp:
-  Udp.beginPacket(address, 123); // NTP requests are to port 123
-  Udp.write(packetBuffer, PACKET_SIZE);
-  Udp.endPacket();
 }

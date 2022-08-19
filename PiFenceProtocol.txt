@@ -6,6 +6,8 @@
 # for a Raspberry Pi cluster. The protocol uses UDP packets to communicate between 
 # the cluster and the arduino and ethernet shield that controls the power supply.
 
+48 bytes of data in the packet. empty space is filled with zeros.
+
 16 bytes for the request
 The request starts at the beginning of the block and any unused space will be filled with zeros or ASCII NUL.
 All information is ASCII encoded
