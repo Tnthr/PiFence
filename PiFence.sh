@@ -75,10 +75,10 @@ cat <<EOF
   </longdesc>
   <parameters>
     <parameter name="action" unique="0" required="1">
-    <getopt mixed="-a, --action"/>
-    <content type="string" default="reboot"/>
-    <shortdesc lang="en">Action to perform</shortdesc>
-    <longdesc lang="en">The action to perform, can be one of: on|off/shutdown|reboot|monitor|metadata</longdesc>
+      <getopt mixed="-a, --action"/>
+      <content type="string" default="reboot"/>
+      <shortdesc lang="en">Action to perform</shortdesc>
+      <longdesc lang="en">The action to perform, can be one of: on|off/shutdown|reboot|monitor|metadata</longdesc>
     </parameter>
     <parameter name="nodename" unique="0" required="1">
       <getopt mixed="-n, --nodename"/>
@@ -86,13 +86,13 @@ cat <<EOF
       <shortdesc lang="en">Target nodename</shortdesc>
       <longdesc lang="en">The nodename of the remote machine to fence</longdesc>
     </parameter>
-        <parameter name="ip" unique="0" required="0">
+    <parameter name="ip" unique="0" required="0">
       <getopt mixed="-i, --fence-ip"/>
       <content type="string" default="10.0.1.77"/>
       <shortdesc lang="en">Fence IP address</shortdesc>
       <longdesc lang="en">The IP address of the fence device</longdesc>
     </parameter>
-        <parameter name="fence-port" unique="0" required="0">
+    <parameter name="fence-port" unique="0" required="0">
       <getopt mixed="-P, --fence-port"/>
       <content type="string" default="11089"/>
       <shortdesc lang="en">Fence port</shortdesc>
@@ -127,7 +127,6 @@ function monitor() {
   return $OCF_SUCCESS
 }
 
-# TODO: Need to change to the actual action
 # Function to send a UDP packet to the power supply and perform the fencing
 # $1 is the command to perform (RP | RK | RR)
 function perform_action() {
@@ -156,7 +155,7 @@ function perform_action() {
   fi
 
   ocf_log debug "${__SCRIPT_NAME}: About to execute STONITH command ${action_code}${host} | ${command}"
-  echo "${__SCRIPT_NAME}: About to execute STONITH command ${action_code}${host} | ${command}"
+  #echo "${__SCRIPT_NAME}: About to execute STONITH command ${action_code}${host} | ${command}"
 
   err_output=$(eval "echo '${action_code}${host}' | ${command}" 2>&1)
   exit_code=$?
@@ -168,7 +167,7 @@ function perform_action() {
   fi
 
   ocf_log debug "Machine ${host} successfully fenced"
-  echo "Machine ${host} successfully fenced"
+  #echo "Machine ${host} successfully fenced"
   return $OCF_SUCCESS
 }
 
@@ -182,7 +181,7 @@ then
   # Suffix args with double dash so it can be parsed by the case statement below
   args=$(echo $raw_input | awk '{ $0="--"$0; gsub(/ /, " --", $0); gsub(/=/, " ", $0); print $0 }')
   ocf_log debug "${__SCRIPT_NAME}: ARGS ARE $args"
-  echo "${__SCRIPT_NAME}: ARGS ARE $args"
+  #echo "${__SCRIPT_NAME}: ARGS ARE $args"
   eval set -- "$args"
 fi
 
@@ -236,6 +235,7 @@ do
 done
 
 # Change the node name to the powered port number for use at the arduino
+# TODO: add pcmk host map or something
 # node1 doesnt exist anymore
 case $host in
   node1)
