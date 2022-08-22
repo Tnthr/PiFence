@@ -39,11 +39,11 @@ char packetBuffer[PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 char ReplyBuffer[PACKET_SIZE] = "ACK\n";  // a string to send back
 int portPinStatus[6][3] = {
                           {0, 0, 0},  // lazy filler
-                          {1, 2, 1},  // port 1
-                          {2, 3, 1},  // port 2
-                          {3, 5, 1},  // port 3
-                          {4, 6, 1},  // port 4
-                          {5, 7, 1}   // port 5
+                          {1, 2, 1},  // node 1 port 2
+                          {2, 3, 1},  // node 2 port 3
+                          {3, 5, 1},  // node 3 port 5
+                          {4, 6, 1},  // node 4 port 6
+                          {5, 7, 1}   // node 5 port 7
 };
 const int PIN = 1;
 const int STATUS = 2;
