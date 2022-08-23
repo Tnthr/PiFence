@@ -238,22 +238,22 @@ done
 # node1 doesnt exist anymore
 case $host in
   node1)
-    host='0'
-  ;;
-  node2)
     host='1'
   ;;
-  node3)
+  node2)
     host='2'
   ;;
-  node4)
+  node3)
     host='3'
   ;;
-  node5)
+  node4)
     host='4'
   ;;
-  node6)
+  node5)
     host='5'
+  ;;
+  node6)
+    host='1'
   ;;
 esac
 
