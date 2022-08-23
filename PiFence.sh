@@ -111,19 +111,18 @@ EOF
     exit 0;
 }
 
-# TODO: Needs to be completely changed
-# Function to monitor the status of each power supply and report back to pacemaker
+# Function to monitor the status of the fence and report back to pacemaker
 function monitor() {
-  # Only need errors from cat here really
-  ps_output=$(ps -p $(cat /run/sshd.pid) > /dev/null 2>&1)
+  # Check to see if the fence port is open
+  ps_output=$(nc -zv 10.0.1.77 11089 > /dev/null 2>&1) # TODO change this hardcoded ip port
 
   if [[ $? != 0 ]]
   then
-    ocf_Log err "${__SCRIPT_NAME}: SSHD NOT running on resource ${current_node_name}: ${ps_output}"
+    ocf_Log err "${__SCRIPT_NAME}: Fence device is NOT running ${current_node_name}: ${ps_output}"
     return $OCF_NOT_RUNNING
   fi
 
-  ocf_log debug "${__SCRIPT_NAME}: SSHD is running, ${current_node_name} is available for fencing if need be."
+  ocf_log debug "${__SCRIPT_NAME}: Fence device is running, ${current_node_name} is available for fencing if need be."
   return $OCF_SUCCESS
 }
 
