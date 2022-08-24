@@ -113,8 +113,8 @@ EOF
 
 # Function to monitor the status of the fence and report back to pacemaker
 function monitor() {
-  # Check to see if the fence port is open
-  ps_output=$(nc -zv 10.0.1.77 11089 > /dev/null 2>&1) # TODO change this hardcoded ip port
+  # Check to see if the fence device is online
+  ps_output=$(ping -c 1 10.0.1.77 > /dev/null 2>&1) # TODO change this hardcoded ip port
 
   if [[ $? != 0 ]]
   then
