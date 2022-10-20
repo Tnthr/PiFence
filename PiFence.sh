@@ -69,30 +69,31 @@ function metadata()
 {
 cat <<EOF
 <?xml version="1.0" ?>
-<resource-agent name="${__SCRIPT_NAME}" shortdesc="Fencing agent for homemade USB power supply" >
+<resource-agent name="${__SCRIPT_NAME}"> 
+  <shortdesc="Fencing agent for homemade USB power supply" />
   <longdesc>
     $description
   </longdesc>
   <parameters>
-    <parameter name="action" unique="0" required="1">
+    <parameter name="action" unique="0" required="0">
       <getopt mixed="-a, --action"/>
       <content type="string" default="reboot"/>
       <shortdesc lang="en">Action to perform</shortdesc>
       <longdesc lang="en">The action to perform, can be one of: on|off/shutdown|reboot|monitor|metadata</longdesc>
     </parameter>
-    <parameter name="nodename" unique="0" required="1">
+    <parameter name="nodename" unique="0" required="0">
       <getopt mixed="-n, --nodename"/>
       <content type="string"/>
       <shortdesc lang="en">Target nodename</shortdesc>
       <longdesc lang="en">The nodename of the remote machine to fence</longdesc>
     </parameter>
-    <parameter name="ip" unique="0" required="0">
+    <parameter name="fence-ip" unique="0" required="1">
       <getopt mixed="-i, --fence-ip"/>
       <content type="string" default="10.0.1.77"/>
       <shortdesc lang="en">Fence IP address</shortdesc>
       <longdesc lang="en">The IP address of the fence device</longdesc>
     </parameter>
-    <parameter name="fence-port" unique="0" required="0">
+    <parameter name="fence-port" unique="0" required="1">
       <getopt mixed="-P, --fence-port"/>
       <content type="string" default="11089"/>
       <shortdesc lang="en">Fence port</shortdesc>
