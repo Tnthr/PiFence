@@ -33,7 +33,7 @@ const int debug = 1;
 byte mac[] = {0xDE, 0xAD, 0x02, 0xB0, 0x0B, 0x1E};
 
 unsigned int localPort = 11089;          // local port to listen for UDP packets
-const int PACKET_SIZE = 8;               // Data packet is no more than 8 bytes
+const int PACKET_SIZE = 16;               // Data packet is no more than 16 bytes
 char packetBuffer[PACKET_SIZE];          // buffer to hold incoming packets
 char ReplyBuffer[PACKET_SIZE] = "ACK\n"; // a string to send back
 int portPinStatus[6][3] = {
