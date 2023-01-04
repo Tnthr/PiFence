@@ -1,0 +1,7 @@
+{
+    "configuration": "mode=off",
+    "board": "arduino:megaavr:nona4809",
+    "output": "..\\build",
+    "sketch": "UdpSendRec\\UdpSendRec.ino",
+    "port": "COM9"
+}
