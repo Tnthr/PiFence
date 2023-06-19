@@ -69,8 +69,7 @@ function metadata()
 {
 cat <<EOF
 <?xml version="1.0" ?>
-<resource-agent name="${__SCRIPT_NAME}"> 
-  <shortdesc="Fencing agent for homemade USB power supply" />
+<resource-agent name="${__SCRIPT_NAME}" shortdesc="Fencing agent for homemade USB power supply"> 
   <longdesc>
     $description
   </longdesc>
@@ -236,7 +235,6 @@ done
 
 # Change the node name to the powered port number for use at the arduino
 # TODO: add pcmk host map or something
-# node1 doesnt exist anymore
 case $host in
   node1)
     host='1'
@@ -252,9 +250,6 @@ case $host in
   ;;
   node5)
     host='5'
-  ;;
-  node6)
-    host='1'
   ;;
 esac
 
