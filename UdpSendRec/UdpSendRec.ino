@@ -27,6 +27,11 @@
 #include <EthernetUdp.h>
 #include <SPI.h>
 
+// #define DEBUG 1
+
+#define POWEROFF HIGH
+#define POWERON LOW
+
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 //byte mac[] = {0xDE, 0xAD, 0xBE, 0xB0, 0x0B, 0x1E}; // For production with IP 10.0.1.77
@@ -39,11 +44,12 @@ char packetBuffer[PACKET_SIZE]; // buffer to hold incoming and outgoing packets
 char ReplyBuffer[PACKET_SIZE] = "ACK\n"; // a string to send back
 int portPinStatus[6][3] = {
     {0, 0, 0}, // lazy filler
-    {1, 2, 1}, // node 1 port 2
-    {2, 3, 1}, // node 2 port 3
-    {3, 5, 1}, // node 3 port 5
-    {4, 6, 1}, // node 4 port 6
-    {5, 7, 1}  // node 5 port 7
+    {1, 2, 1}, // node 1 pin 2
+    {2, 3, 1}, // node 2 pin 3
+    // Skipped pin 4 because of some interference
+    {3, 5, 1}, // node 3 pin 5
+    {4, 6, 1}, // node 4 pin 6
+    {5, 7, 1}  // node 5 pin 7
 };
 const int PIN = 1;
 const int STATUS = 2;
@@ -52,39 +58,54 @@ const int STATUS = 2;
 EthernetUDP Udp;
 
 void setup() {
-  // Set the relay pins to output and low. In this case 'low' is powered on
+  // Set the relay pins to output and power on.
   for (int x = 1; x <= 5; x++) {
     pinMode(portPinStatus[x][1], OUTPUT);
-    digitalWrite(portPinStatus[x][1], LOW);
+    digitalWrite(portPinStatus[x][1], POWERON);
   }
 
+#ifdef DEBUG
   // Open serial communications and wait for port to open:
-  // Serial.begin(9600);
-  // while (!Serial) {
-  //  ; // wait for serial port to connect. Needed for native USB port only
-  //}
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
 
-  // Serial.println("Serial opened.");
+  Serial.println("Serial opened.");
+#endif
 
   // start Ethernet and UDP
   if (Ethernet.begin(mac) == 0) {
-    // Serial.println("Failed to configure Ethernet using DHCP");
+#ifdef DEBUG
+    Serial.println("Failed to configure Ethernet using DHCP");
     //  Check for Ethernet hardware present
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-      // Serial.println("Ethernet shield was not found.  Sorry, can't run
-      //  without hardware. :(");
+      Serial.println(
+          "Ethernet not found.  Sorry, can't run without hardware. :(");
     } else if (Ethernet.linkStatus() == LinkOFF) {
-      // Serial.println("Ethernet cable is not connected.");
+      Serial.println("Ethernet cable is not connected.");
     }
+#endif
     // no point in carrying on, so do nothing forevermore:
     while (true) {
       delay(1);
     }
+  } else {
+#ifdef DEBUG
+    if (Ethernet.linkStatus() == Unknown) {
+      Serial.println("Link status unknown.");
+    } else if (Ethernet.linkStatus() == LinkON) {
+      Serial.println("Link status: On");
+    } else if (Ethernet.linkStatus() == LinkOFF) {
+      Serial.println("Link status: Off");
+    }
+#endif
   }
   Udp.begin(localPort);
-  // Serial.println(Ethernet.localIP());
-
-  // Serial.println("Waiting for data...");
+#ifdef DEBUG
+  Serial.println(Ethernet.localIP());
+  Serial.println("Waiting for data...");
+#endif
 }
 
 void loop() {
@@ -93,46 +114,54 @@ void loop() {
     // read the packet into packetBuffer
     Udp.read(packetBuffer, PACKET_SIZE);
 
-    // The port received will be 1-5 which is cast to int
+    // second char is the node number (1-5) which is converted to int
     int portNum = (packetBuffer[2] - '0');
-    // char portName = port + '0';
 
-    // first character always R; second is what the request is
+    // zeroth character always R; first is what the request is
     if (packetBuffer[0] == 'R') { // This means its a request
       switch (packetBuffer[1]) {
       case 'S': // Status
-        // Serial.println("Got an R and S");
-
+#ifdef DEBUG
+        Serial.println("Got an R and S");
+#endif
         if (portPinStatus[portNum][STATUS] == 1) {
           strcpy(ReplyBuffer, "ON\n");
-
-          // Serial.print("Port is ON: ");
-          // Serial.println(portNum);
+#ifdef DEBUG
+          Serial.print("Port is ON: ");
+          Serial.println(portNum);
+#endif
         } else {
           strcpy(ReplyBuffer, "OFF\n");
-
-          // Serial.print("Port is OFF: ");
-          // Serial.println(portNum);
+#ifdef DEBUG
+          Serial.print("Port is OFF: ");
+          Serial.println(portNum);
+#endif
         }
         break;
       case 'K': // Kill
-        // Serial.println("Got an R and K");
-        digitalWrite(portPinStatus[portNum][PIN], HIGH);
+#ifdef DEBUG
+        Serial.println("Got an R and K");
+#endif
+        digitalWrite(portPinStatus[portNum][PIN], POWEROFF);
         portPinStatus[portNum][STATUS] = 0;
         strcpy(ReplyBuffer, "Success\n");
         break;
       case 'R': // Reboot
-        // Serial.println("Got an R and R");
-        digitalWrite(portPinStatus[portNum][PIN], HIGH);
+#ifdef DEBUG
+        Serial.println("Got an R and R");
+#endif
+        digitalWrite(portPinStatus[portNum][PIN], POWEROFF);
         portPinStatus[portNum][STATUS] = 0;
         delay(2000); // 2 seconds delay should be enough
-        digitalWrite(portPinStatus[portNum][PIN], LOW);
+        digitalWrite(portPinStatus[portNum][PIN], POWERON);
         portPinStatus[portNum][STATUS] = 1;
         strcpy(ReplyBuffer, "Success\n");
         break;
       case 'P': // Power On
-        // Serial.println("Got an R and P");
-        digitalWrite(portPinStatus[portNum][PIN], LOW);
+#ifdef DEBUG
+        Serial.println("Got an R and P");
+#endif
+        digitalWrite(portPinStatus[portNum][PIN], POWERON);
         portPinStatus[portNum][STATUS] = 1;
         strcpy(ReplyBuffer, "Success\n");
         break;
@@ -145,6 +174,5 @@ void loop() {
     Udp.endPacket();
   }
 
-  // delay(100);
   Ethernet.maintain();
 }
