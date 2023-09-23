@@ -32,11 +32,9 @@
 #define POWEROFF HIGH
 #define POWERON LOW
 
-// Enter a MAC address for your controller below.
-// Newer Ethernet shields have a MAC address printed on a sticker on the shield
-//byte mac[] = {0xDE, 0xAD, 0xBE, 0xB0, 0x0B, 0x1E}; // For production with IP 10.0.1.77
-byte mac[] = {0xDE, 0xAD, 0x02, 0xB0, 0x0B, 0x1E}; // For testing with IP 10.0.1.55
-
+// The MAC address for the controller
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xB0, 0x0B, 0x1E}; // For production with IP 10.0.1.77
+// byte mac[] = {0xDE, 0xAD, 0x02, 0xB0, 0x0B, 0x1E}; // For testing with IP 10.0.1.55
 
 unsigned int localPort = 11089; // local port to listen for UDP packets
 const int PACKET_SIZE = 48;     // Data packet is no more than 48 bytes
