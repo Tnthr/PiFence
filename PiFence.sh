@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Written by Brian Jenkins 
+# Written by Brian Jenkins
 # 4 August 2022
 
 # Send a UDP packet to the homemade power supply to cycle power to any one
 # of the individual power supplies. This will serve to fence a Raspberry Pi
 # that is powered by this supply. This script is used in conjuction with
-# a pacemaker cluster setup with Raspberry Pis. 
+# a pacemaker cluster setup with Raspberry Pis.
 
 # This script is based on the fence_ssh script written by Steve Bissaker
 # See credits and GPL below
@@ -28,8 +28,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Initialization
-if [[ -z $OCF_ROOT ]]
-then
+if [[ -z $OCF_ROOT ]]; then
   # Set default OCF_ROOT directory
   export OCF_ROOT=/usr/lib/ocf
 fi
@@ -37,8 +36,7 @@ fi
 : ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/resource.d/heartbeat}
 . ${OCF_FUNCTIONS_DIR}/.ocf-shellfuncs
 
-if [[ -z $__SCRIPT_NAME ]]
-then
+if [[ -z $__SCRIPT_NAME ]]; then
   __SCRIPT_NAME=$(basename $0)
 fi
 
@@ -48,9 +46,8 @@ action=$__OCF_ACTION
 current_node_name=$(crm_node -n)
 description="${__SCRIPT_NAME} is a fencing agent for homemade USB power supply."
 
-function usage()
-{
-cat <<EOF
+function usage() {
+  cat <<EOF
 $__SCRIPT_NAME - $description
 Usage: $__SCRIPT_NAME -a|--action [action] -n|--nodename [nodename] [options]
 Options:
@@ -62,12 +59,11 @@ Options:
  -i, --fence-ip    IP address of the fence device, default to 10.0.1.77
  -P, --fence-port  Port of the fence device, default to 11089
 EOF
-    exit $OCF_SUCCESS;
+  exit $OCF_SUCCESS
 }
 
-function metadata()
-{
-cat <<EOF
+function metadata() {
+  cat <<EOF
 <?xml version="1.0" ?>
 <resource-agent name="${__SCRIPT_NAME}" shortdesc="Fencing agent for homemade USB power supply"> 
   <longdesc>
@@ -108,16 +104,15 @@ cat <<EOF
   </actions>
 </resource-agent>
 EOF
-    exit 0;
+  exit 0
 }
 
 # Function to monitor the status of the fence and report back to pacemaker
 function monitor() {
   # Check to see if the fence device is online
-  ps_output=$(ping -c 1 10.0.1.77 > /dev/null 2>&1) # TODO change this hardcoded ip port
+  ps_output=$(ping -c 1 10.0.1.77 >/dev/null 2>&1) # TODO change this hardcoded ip port
 
-  if [[ $? != 0 ]]
-  then
+  if [[ $? != 0 ]]; then
     ocf_Log err "${__SCRIPT_NAME}: Fence device is NOT running ${current_node_name}: ${ps_output}"
     return $OCF_NOT_RUNNING
   fi
@@ -132,22 +127,19 @@ function perform_action() {
   command="nc -u -w2"
   action_code=$1
 
-  if [[ -z $host ]]
-  then
+  if [[ -z $host ]]; then
     ocf_log err "Error, no nodename specified! Run '${__SCRIPT_NAME} --help' for usage."
     return $OCF_ERR_ARGS
   fi
 
   # add the destination ip to the end of the command
-  if [[ -n $fence_ip ]]
-  then
+  if [[ -n $fence_ip ]]; then
     command="${command} ${fence_ip}"
   else
     command="${command} 10.0.1.77"
   fi
   # add the destination port to the end of the command
-  if [[ -n $fence_port ]]
-  then
+  if [[ -n $fence_port ]]; then
     command="${command} ${fence_port}"
   else
     command="${command} 11089"
@@ -159,8 +151,7 @@ function perform_action() {
   err_output=$(eval "echo '${action_code}${host}' | ${command}" 2>&1)
   exit_code=$?
 
-  if [[  $exit_code != 0 ]]
-  then
+  if [[ $exit_code != 0 ]]; then
     ocf_log err "Error fencing machine: ${err_output}"
     return $OCF_ERR_GENERIC
   fi
@@ -171,10 +162,8 @@ function perform_action() {
 }
 
 # Data being piped in from stonith-ng
-if [[ -p /dev/stdin ]]
-then
-  while read line
-  do
+if [[ -p /dev/stdin ]]; then
+  while read line; do
     raw_input+="${line} "
   done
   # Suffix args with double dash so it can be parsed by the case statement below
@@ -184,95 +173,92 @@ then
   eval set -- "$args"
 fi
 
-while [[ $# -gt 0 ]]
-do
+while [[ $# -gt 0 ]]; do
   case $1 in
-    -a | --action)
-      action=$2
-      shift
-      shift
+  -a | --action)
+    action=$2
+    shift
+    shift
     ;;
-    -n | --nodename)
-      host=$2
-      shift
-      shift
+  -n | --nodename)
+    host=$2
+    shift
+    shift
     ;;
-    -i | --fence-ip)
-      fence_ip=$2
-      shift
-      shift
+  -i | --fence-ip)
+    fence_ip=$2
+    shift
+    shift
     ;;
-    -P | --fence-port)
-      fence_port=$2
-      shift
-      shift
+  -P | --fence-port)
+    fence_port=$2
+    shift
+    shift
     ;;
-    --help)
-      usage
+  --help)
+    usage
     ;;
-    --port)
-      shift
-      shift
+  --port)
+    shift
+    shift
     ;;
-    *)
-      unknown_args+=($1)
-      shift
-      shift
+  *)
+    unknown_args+=($1)
+    shift
+    shift
     ;;
   esac
 done
 
-if [[ -z $action ]]
-then
+if [[ -z $action ]]; then
   ocf_log err "Error, no action specified! Run '${__SCRIPT_NAME} --help' for usage."
   exit $OCF_ERR_ARGS
 fi
 
-for unknown_arg in ${unknown_args[@]};
-do
+for unknown_arg in ${unknown_args[@]}; do
   ocf_log err "Argument '${unknown_arg}' is not a valid argument!"
 done
 
 # Change the node name to the powered port number for use at the arduino
 # TODO: add pcmk host map or something
 case $host in
-  node1)
-    host='1'
+node1)
+  host='1'
   ;;
-  node2)
-    host='2'
+node2)
+  host='2'
   ;;
-  node3)
-    host='3'
+node3)
+  host='3'
   ;;
-  node4)
-    host='4'
+node4)
+  host='4'
   ;;
-  node5)
-    host='5'
+node5)
+  host='5'
   ;;
 esac
 
 # Decide which action was requested and call the action function
 case $action in
-  on)
-    perform_action 'RP'
+on)
+  perform_action 'RP'
   ;;
-  off | shutdown)
-    perform_action 'RK'
+off | shutdown)
+  perform_action 'RK'
   ;;
-  reboot)
-    perform_action 'RR'
+reboot)
+  perform_action 'RR'
   ;;
-  monitor)
-    monitor
+monitor)
+  monitor
   ;;
-  metadata | meta_data | metadata)
-    metadata
+metadata | meta_data | metadata)
+  metadata
   ;;
-  *)
-    ocf_log info "Action ${action} is not a valid action, run '${__SCRIPT_NAME} --help' for usage."
-    exit $OCF_ERR_UNIMPLEMENTED
+*)
+  ocf_log info "Action ${action} is not a valid action, run '${__SCRIPT_NAME} --help' for usage."
+  exit $OCF_ERR_UNIMPLEMENTED
   ;;
 esac
 
