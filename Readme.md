@@ -7,3 +7,6 @@ The Arduino program is for an Arduino with ethernet shield connected to five sep
 
 The whole project is pretty rough but it works well enough for "production" use. Plenty of room for improvement though.
 Recently added the first revision of a custom PCB. All of the files are from KiCAD. I do not recommend using this PCB design as is because it is extremely simple and only uses various breakout boards. The next version will be a real PCB that includes all of the discrete components. 
+
+The project is designed to fit into a Raspberry Pi cluster case to be self-contained. Link to the case used is below.
+https://www.printables.com/en/model/182055-raspberry-pi-4-cluster-case
