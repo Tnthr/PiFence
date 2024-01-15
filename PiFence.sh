@@ -69,38 +69,37 @@ function metadata() {
   <longdesc>
     $description
   </longdesc>
+  <vendor-url>
+    https://tnthr.dev
+  </vendor-url>
   <parameters>
     <parameter name="action" unique="0" required="0">
       <getopt mixed="-a, --action"/>
       <content type="string" default="reboot"/>
-      <shortdesc lang="en">Action to perform</shortdesc>
-      <longdesc lang="en">The action to perform, can be one of: on|off/shutdown|reboot|monitor|metadata</longdesc>
+      <shortdesc lang="en">Action to perform: on|off/shutdown|reboot|monitor|metadata</shortdesc>
     </parameter>
     <parameter name="nodename" unique="0" required="0">
       <getopt mixed="-n, --nodename"/>
       <content type="string"/>
-      <shortdesc lang="en">Target nodename</shortdesc>
-      <longdesc lang="en">The nodename of the remote machine to fence</longdesc>
+      <shortdesc lang="en">The nodename of the remote machine to fence</shortdesc>
     </parameter>
     <parameter name="fence-ip" unique="0" required="1">
       <getopt mixed="-i, --fence-ip"/>
       <content type="string" default="10.0.1.77"/>
-      <shortdesc lang="en">Fence IP address</shortdesc>
-      <longdesc lang="en">The IP address of the fence device</longdesc>
+      <shortdesc lang="en">The IP address of the fence device</shortdesc>
     </parameter>
     <parameter name="fence-port" unique="0" required="1">
       <getopt mixed="-P, --fence-port"/>
       <content type="string" default="11089"/>
-      <shortdesc lang="en">Fence port</shortdesc>
-      <longdesc lang="en">The port of the fence device</longdesc>
+      <shortdesc lang="en">The port of the fence device</shortdesc>
     </parameter>
   </parameters>
   <actions>
-    <action name="on" timeout="10s"/>
-    <action name="off" timeout="10s"/>
-    <action name="reboot" timeout="10s"/>
-    <action name="monitor" timeout="10s" interval="120s"/>
-    <action name="metadata" timeout="10s"/>
+    <action name="on" />
+    <action name="off" />
+    <action name="reboot" />
+    <action name="monitor" />
+    <action name="metadata" />
   </actions>
 </resource-agent>
 EOF
@@ -175,38 +174,38 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-  -a | --action)
-    action=$2
-    shift
-    shift
-    ;;
-  -n | --nodename)
-    host=$2
-    shift
-    shift
-    ;;
-  -i | --fence-ip)
-    fence_ip=$2
-    shift
-    shift
-    ;;
-  -P | --fence-port)
-    fence_port=$2
-    shift
-    shift
-    ;;
-  --help)
-    usage
-    ;;
-  --port)
-    shift
-    shift
-    ;;
-  *)
-    unknown_args+=($1)
-    shift
-    shift
-    ;;
+    -a | --action)
+      action=$2
+      shift
+      shift
+      ;;
+    -n | --nodename)
+      host=$2
+      shift
+      shift
+      ;;
+    -i | --fence-ip)
+      fence_ip=$2
+      shift
+      shift
+      ;;
+    -P | --fence-port)
+      fence_port=$2
+      shift
+      shift
+      ;;
+    --help)
+      usage
+      ;;
+    --port)
+      shift
+      shift
+      ;;
+    *)
+      unknown_args+=($1)
+      shift
+      shift
+      ;;
   esac
 done
 
@@ -222,44 +221,44 @@ done
 # Change the node name to the powered port number for use at the arduino
 # TODO: add pcmk host map or something
 case $host in
-node1)
-  host='1'
-  ;;
-node2)
-  host='2'
-  ;;
-node3)
-  host='3'
-  ;;
-node4)
-  host='4'
-  ;;
-node5)
-  host='5'
-  ;;
+  node1)
+    host='1'
+    ;;
+  node2)
+    host='2'
+    ;;
+  node3)
+    host='3'
+    ;;
+  node4)
+    host='4'
+    ;;
+  node5)
+    host='5'
+    ;;
 esac
 
 # Decide which action was requested and call the action function
 case $action in
-on)
-  perform_action 'RP'
-  ;;
-off | shutdown)
-  perform_action 'RK'
-  ;;
-reboot)
-  perform_action 'RR'
-  ;;
-monitor)
-  monitor
-  ;;
-metadata | meta_data | metadata)
-  metadata
-  ;;
-*)
-  ocf_log info "Action ${action} is not a valid action, run '${__SCRIPT_NAME} --help' for usage."
-  exit $OCF_ERR_UNIMPLEMENTED
-  ;;
+  on)
+    perform_action 'RP'
+    ;;
+  off | shutdown)
+    perform_action 'RK'
+    ;;
+  reboot)
+    perform_action 'RR'
+    ;;
+  monitor)
+    monitor
+    ;;
+  metadata | meta_data | metadata)
+    metadata
+    ;;
+  *)
+    ocf_log info "Action ${action} is not a valid action, run '${__SCRIPT_NAME} --help' for usage."
+    exit $OCF_ERR_UNIMPLEMENTED
+    ;;
 esac
 
 exit $?
